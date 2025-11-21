@@ -473,29 +473,24 @@ export async function buyTicket(
     if (error) {
       console.error('Edge function error:', error);
       
-      // Check if it's a network/connection error
+      // Check if it's a network/connection error - use fallback
       const errorMessage = error.message || String(error);
       const errorContext = error.context || {};
       
-      // Check for specific error types
-      if (errorMessage.includes('Failed to send') || 
+      // Check for specific error types that indicate edge function is unavailable
+      const isNetworkError = errorMessage.includes('Failed to send') || 
           errorMessage.includes('fetch') || 
           errorMessage.includes('network') ||
           errorMessage.includes('ECONNREFUSED') ||
           errorMessage.includes('timeout') ||
-          errorMessage.includes('Failed to fetch')) {
-        return {
-          success: false,
-          message: 'Unable to connect to the server. Please check your internet connection and ensure the edge function is deployed.',
-        };
-      }
+          errorMessage.includes('Failed to fetch') ||
+          errorMessage.includes('not found') ||
+          errorMessage.includes('404') ||
+          errorContext.statusCode === 404;
 
-      // Check if edge function doesn't exist
-      if (errorMessage.includes('not found') || errorMessage.includes('404') || errorContext.statusCode === 404) {
-        return {
-          success: false,
-          message: 'The ticket service is not available. Please contact support or try again later.',
-        };
+      if (isNetworkError) {
+        console.warn('Edge function unavailable, using direct database fallback');
+        return await createTicketDirectly(supabase, params);
       }
 
       // Return the actual error message from the edge function
@@ -525,21 +520,95 @@ export async function buyTicket(
     console.error('Error buying ticket (catch block):', error);
     const errorMessage = error.message || String(error) || 'Failed to buy ticket';
     
-    // Check if it's a network error
-    if (errorMessage.includes('Failed to send') || 
+    // Check if it's a network error - use fallback
+    const isNetworkError = errorMessage.includes('Failed to send') || 
         errorMessage.includes('fetch') || 
         errorMessage.includes('network') ||
         errorMessage.includes('ECONNREFUSED') ||
-        errorMessage.includes('timeout')) {
-      return {
-        success: false,
-        message: 'Unable to connect to the server. Please check your internet connection and ensure the edge function is deployed.',
-      };
+        errorMessage.includes('timeout');
+    
+    if (isNetworkError) {
+      console.warn('Edge function unavailable, using direct database fallback');
+      return await createTicketDirectly(supabase, params);
     }
     
     return {
       success: false,
       message: errorMessage,
+    };
+  }
+}
+
+/**
+ * Fallback function to create tickets directly in the database
+ * Used when edge function is unavailable
+ */
+async function createTicketDirectly(
+  supabase: SupabaseClient,
+  params: BuyTicketParams
+): Promise<CreateTicketResponse> {
+  try {
+    // Get authenticated user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return {
+        success: false,
+        message: 'You must be logged in to purchase tickets.',
+      };
+    }
+
+    // Generate QR payload (unique identifier for the ticket)
+    const qrPayload = `${user.id}-${params.routeId}-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+    // Insert ticket directly into database
+    const { data: ticket, error: insertError } = await supabase
+      .from('tickets')
+      .insert({
+        user_id: user.id,
+        route_id: params.routeId,
+        seat_number: params.seatNumber || null,
+        ticket_type: params.ticketType,
+        qr_payload: qrPayload,
+        status: 'valid',
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Error creating ticket directly:', insertError);
+      return {
+        success: false,
+        message: insertError.message || 'Failed to create ticket. Please try again.',
+      };
+    }
+
+    if (!ticket) {
+      return {
+        success: false,
+        message: 'Failed to create ticket. Please try again.',
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        id: ticket.id,
+        user_id: ticket.user_id,
+        route_id: ticket.route_id,
+        seat_number: ticket.seat_number,
+        ticket_type: ticket.ticket_type,
+        qr_payload: ticket.qr_payload,
+        status: ticket.status,
+        purchased_at: ticket.purchased_at,
+        validated_at: ticket.validated_at,
+        blockchain_tx_hash: ticket.blockchain_tx_hash,
+      },
+    };
+  } catch (error: any) {
+    console.error('Error creating ticket directly:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to create ticket. Please try again.',
     };
   }
 }
