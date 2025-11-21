@@ -64,7 +64,7 @@ export interface RevenueStats {
 export interface Staff {
   id: string
   user_id: string
-  station: string | null
+  station_name: string | null
   role: string
   created_at: string
 }

@@ -75,7 +75,7 @@ export default function StaffPage() {
       const { error } = await supabase.from('staff').insert({
         user_id: userId,
         role: formData.role,
-        station: formData.station || null,
+        station_name: formData.station || null,
       })
 
       if (error) throw error
@@ -213,7 +213,7 @@ export default function StaffPage() {
                       {member.user_id.slice(0, 8)}...
                     </TableCell>
                     <TableCell className="capitalize">{member.role}</TableCell>
-                    <TableCell>{member.station || 'N/A'}</TableCell>
+                    <TableCell>{member.station_name || 'N/A'}</TableCell>
                     <TableCell>{formatDate(member.created_at)}</TableCell>
                     <TableCell>
                       <Button

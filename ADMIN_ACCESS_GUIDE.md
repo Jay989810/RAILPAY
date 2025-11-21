@@ -31,14 +31,40 @@ This guide explains how to access the admin panel and use its features.
    - Save
 
 2. **Using SQL:**
+   
+   First, get your user information:
    ```sql
-   INSERT INTO staff (user_id, role, station)
+   SELECT id, email, full_name 
+   FROM profiles 
+   WHERE id = 'a55e3419-9658-43bd-8c3a-196513feb30c';
+   ```
+   
+   Then insert into staff with all required fields:
+   ```sql
+   INSERT INTO staff (user_id, full_name, email, role, station_name)
    VALUES (
-     'user-uuid-here',
+     'a55e3419-9658-43bd-8c3a-196513feb30c',
+     'Your Full Name',  -- Replace with your actual name from profiles
+     'your-email@example.com',  -- Replace with your actual email from profiles
      'admin',
      NULL
    );
    ```
+   
+   **Or use a single query that gets the data automatically:**
+   ```sql
+   INSERT INTO staff (user_id, full_name, email, role, station_name)
+   SELECT 
+     id,
+     COALESCE(full_name, 'Admin User'),
+     email,
+     'admin',
+     NULL
+   FROM profiles
+   WHERE id = 'a55e3419-9658-43bd-8c3a-196513feb30c';
+   ```
+   
+   **Note:** The `staff` table requires `full_name`, `email`, and `role` fields (they are NOT NULL). The column for station is `station_name`, not `station`.
 
 ### Accessing the Admin Panel
 
