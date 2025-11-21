@@ -9,10 +9,13 @@ import { formatDate, formatCurrency } from '@/lib/utils'
 import { Loader2, CreditCard, Calendar, CheckCircle, AlertCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { useAccount } from 'wagmi'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
 import Link from 'next/link'
 
 export default function PassesPage() {
   const router = useRouter()
+  const { address, isConnected } = useAccount()
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState<string | null>(null)
   const [passes, setPasses] = useState<any[]>([])
@@ -56,7 +59,7 @@ export default function PassesPage() {
         return
       }
 
-      if (!profile?.wallet_address) {
+      if (!isConnected || !address) {
         setError('Please connect your wallet before purchasing passes.')
         setCreating(null)
         return
@@ -112,18 +115,18 @@ export default function PassesPage() {
         </Alert>
       )}
 
-      {(!profile?.nin_verified || !profile?.wallet_address) && (
-        <Alert variant="destructive">
+      {(!profile?.nin_verified || !isConnected) && (
+        <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Requirements Not Met</AlertTitle>
           <AlertDescription className="mt-2 space-y-2">
             {!profile?.nin_verified && (
               <p>You must verify your identity before purchasing passes.</p>
             )}
-            {!profile?.wallet_address && (
+            {!isConnected && (
               <p>Please connect your wallet before purchasing passes.</p>
             )}
-            <div className="flex gap-2 mt-4">
+            <div className="flex flex-wrap gap-2 mt-4">
               {!profile?.nin_verified && (
                 <Button variant="outline" size="sm" asChild>
                   <Link href="/auth/nin-verification">
@@ -131,12 +134,52 @@ export default function PassesPage() {
                   </Link>
                 </Button>
               )}
-              {!profile?.wallet_address && (
-                <Button variant="outline" size="sm" asChild>
-                  <Link href="/dashboard/profile">
-                    Connect Wallet
-                  </Link>
-                </Button>
+              {!isConnected && (
+                <div className="[&>button]:!h-9 [&>button]:!px-4 [&>button]:!text-sm">
+                  <ConnectButton.Custom>
+                    {({
+                      account,
+                      chain,
+                      openAccountModal,
+                      openChainModal,
+                      openConnectModal,
+                      authenticationStatus,
+                      mounted,
+                    }) => {
+                      const ready = mounted && authenticationStatus !== 'loading'
+                      const connected =
+                        ready &&
+                        account &&
+                        chain &&
+                        (!authenticationStatus ||
+                          authenticationStatus === 'authenticated')
+
+                      return (
+                        <div
+                          {...(!ready && {
+                            'aria-hidden': true,
+                            style: {
+                              opacity: 0,
+                              pointerEvents: 'none',
+                              userSelect: 'none',
+                            },
+                          })}
+                        >
+                          {(() => {
+                            if (!connected) {
+                              return (
+                                <Button variant="outline" size="sm" onClick={openConnectModal} type="button">
+                                  Connect Wallet
+                                </Button>
+                              )
+                            }
+                            return null
+                          })()}
+                        </div>
+                      )
+                    }}
+                  </ConnectButton.Custom>
+                </div>
               )}
             </div>
           </AlertDescription>
@@ -210,7 +253,7 @@ export default function PassesPage() {
                   <Button
                     className="w-full"
                     onClick={() => handleCreatePass(passType)}
-                    disabled={creating === passType || !profile?.nin_verified || !profile?.wallet_address}
+                    disabled={creating === passType || !profile?.nin_verified || !isConnected}
                   >
                     {creating === passType ? (
                       <>
