@@ -1,0 +1,32 @@
+{
+  "network": "sepolia",
+  "chainId": "11155111",
+  "deployer": "0x68A643D905107728853AC4E66934e2B75adDED39",
+  "deployedAt": "2025-11-20T16:21:02.203Z",
+  "contracts": {
+    "RailPayIdentity": {
+      "address": "0xC87333Cd6A1A9ce85d90acA1D7157a7DF80717F8",
+      "description": "Registry of passengers and staff/admin roles"
+    },
+    "RailPayReceipt": {
+      "address": "0x4F2c946bf2ED890Df80f03396b1Fe9fe97d7C4A6",
+      "description": "Payment receipt registry (ERC8004-style)"
+    },
+    "RailPayTicket": {
+      "address": "0x0eC2b764f34bfB904E175c120B16613E06054766",
+      "description": "ERC721 NFT representation of tickets"
+    },
+    "RailPassSubscription": {
+      "address": "0x0953B0c46a68adC2830544e884bd91a8354BcBD0",
+      "description": "Pass system for daily/weekly/monthly subscriptions"
+    },
+    "RailPayPayments": {
+      "address": "0xB3c9aB15029d230e3f6c1ccAbb5CBADebC4498d8",
+      "description": "Flexible payment processing contract",
+      "dependencies": {
+        "receiptContract": "0x4F2c946bf2ED890Df80f03396b1Fe9fe97d7C4A6"
+      }
+    }
+  }
+}
+
