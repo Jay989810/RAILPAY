@@ -25,6 +25,11 @@ export default function AdminLayout({
         return
       }
 
+      if (!user?.id) {
+        setChecking(false)
+        return
+      }
+
       try {
         // Check if user is admin via profile role or staff table
         const { data: profile } = await supabase

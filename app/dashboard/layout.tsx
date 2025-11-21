@@ -4,7 +4,7 @@ import { Sidebar } from '@/components/Sidebar'
 import { NavBar } from '@/components/NavBar'
 import { useAuthStore } from '@/lib/store'
 import { useRouter, usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase-client'
 import { Loader2 } from 'lucide-react'
 
@@ -29,33 +29,19 @@ export default function DashboardLayout({
   const [checkingNin, setCheckingNin] = useState(true)
   const [ninVerified, setNinVerified] = useState(false)
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/auth/login')
-      return
-    }
-
-    // Check if current route requires NIN verification
-    const requiresNin = NIN_VERIFIED_ROUTES.some(route => pathname?.startsWith(route))
-    
-    if (requiresNin && user?.id) {
-      checkNinVerification()
-    } else {
-      setCheckingNin(false)
-    }
-  }, [isAuthenticated, user, pathname, router])
-
-  async function checkNinVerification() {
+  const checkNinVerification = useCallback(async () => {
     if (!user?.id) {
       setCheckingNin(false)
       return
     }
 
+    const userId = user.id
+
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('nin_verified')
-        .eq('id', user.id)
+        .eq('id', userId)
         .single()
 
       if (error) throw error
@@ -71,7 +57,23 @@ export default function DashboardLayout({
     } finally {
       setCheckingNin(false)
     }
-  }
+  }, [user?.id, router])
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/auth/login')
+      return
+    }
+
+    // Check if current route requires NIN verification
+    const requiresNin = NIN_VERIFIED_ROUTES.some(route => pathname?.startsWith(route))
+    
+    if (requiresNin && user?.id) {
+      checkNinVerification()
+    } else {
+      setCheckingNin(false)
+    }
+  }, [isAuthenticated, user, pathname, router, checkNinVerification])
 
   if (!isAuthenticated) {
     return null

@@ -9,7 +9,6 @@ import { formatDate, formatCurrency } from '@/lib/utils'
 import { Loader2, CreditCard, Calendar, CheckCircle, AlertCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
 export default function PassesPage() {

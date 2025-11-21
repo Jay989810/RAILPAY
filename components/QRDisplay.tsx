@@ -7,6 +7,13 @@ import { Button } from './ui/button'
 import { Download, Copy, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+interface QRDisplayProps {
+  value: string
+  title?: string
+  description?: string
+  className?: string
+}
+
 export function QRDisplay({ value, title, description, className }: QRDisplayProps) {
   const [copied, setCopied] = useState(false)
 

@@ -72,21 +72,32 @@ export default function DashboardPage() {
     )
   }
 
-  const recentTickets = tickets.slice(0, 2).map((ticket) => ({
-    id: ticket.id,
-    routeName: ticket.route
-      ? `${ticket.route.origin} → ${ticket.route.destination}`
-      : 'Unknown Route',
-    from: ticket.route?.origin || 'N/A',
-    to: ticket.route?.destination || 'N/A',
-    date: ticket.purchased_at,
-    time: new Date(ticket.purchased_at).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    }),
-    price: ticket.route?.base_price || 0,
-    status: ticket.status === 'valid' ? 'active' : ticket.status === 'used' ? 'used' : 'expired',
-  }))
+  const recentTickets = tickets.slice(0, 2).map((ticket) => {
+    let status: 'active' | 'used' | 'expired' = 'expired'
+    if (ticket.status === 'valid' || ticket.status === 'active') {
+      status = 'active'
+    } else if (ticket.status === 'used') {
+      status = 'used'
+    } else {
+      status = 'expired'
+    }
+    
+    return {
+      id: ticket.id,
+      routeName: ticket.route
+        ? `${ticket.route.origin} → ${ticket.route.destination}`
+        : 'Unknown Route',
+      from: ticket.route?.origin || 'N/A',
+      to: ticket.route?.destination || 'N/A',
+      date: ticket.purchased_at,
+      time: new Date(ticket.purchased_at).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      price: ticket.route?.base_price || 0,
+      status,
+    }
+  })
 
   return (
     <div className="space-y-8 animate-fadeIn">

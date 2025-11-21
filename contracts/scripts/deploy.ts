@@ -40,12 +40,12 @@ async function main() {
     // Validate chain ID before proceeding
     try {
       const network = await ethers.provider.getNetwork();
-      const expectedChainId = 11155111n; // Sepolia chain ID
+      const expectedChainId = BigInt(11155111); // Sepolia chain ID
       
       if (network.chainId !== expectedChainId) {
         console.error("❌ Error: Chain ID mismatch!");
         console.error(`   Expected: ${expectedChainId} (Sepolia)`);
-        console.error(`   Got: ${network.chainId} (${network.chainId === 1n ? 'Mainnet' : 'Unknown'})`);
+        console.error(`   Got: ${network.chainId} (${network.chainId === BigInt(1) ? 'Mainnet' : 'Unknown'})`);
         console.error("\nYour RPC_URL is pointing to the wrong network.");
         console.error("\nPlease update your .env file with a valid Sepolia RPC URL:");
         console.error("  RPC_URL=https://rpc.sepolia.org");

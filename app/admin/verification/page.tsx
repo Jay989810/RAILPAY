@@ -43,7 +43,7 @@ export default function AdminVerificationPage() {
           setFilteredVerifications(data)
 
           // Fetch user profiles for display
-          const userIds = [...new Set(data.map((v: VerificationRecord) => v.user_id))]
+          const userIds = Array.from(new Set(data.map((v: VerificationRecord) => v.user_id)))
           if (userIds.length > 0) {
             const { data: profilesData, error: profilesError } = await supabase
               .from('profiles')

@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { QrCode, ArrowLeft } from 'lucide-react'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 
-export default function GenerateQRPage() {
+function GenerateQRContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const ticketId = searchParams.get('id')
@@ -87,6 +87,18 @@ export default function GenerateQRPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function GenerateQRPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-8 max-w-4xl mx-auto p-4">
+        <div className="text-center">Loading...</div>
+      </div>
+    }>
+      <GenerateQRContent />
+    </Suspense>
   )
 }
 

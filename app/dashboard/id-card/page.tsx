@@ -25,6 +25,8 @@ export default function IdCardPage() {
     }
 
     async function fetchIdCard() {
+      if (!user?.id) return
+      
       try {
         // Check if NIN is verified first
         const { data: profile, error: profileError } = await supabase
