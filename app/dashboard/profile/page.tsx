@@ -40,9 +40,9 @@ export default function ProfilePage() {
         <CardContent className="space-y-6">
           <div className="flex flex-col items-center space-y-4">
             <Avatar className="h-24 w-24">
-              <AvatarImage src={user?.name} />
+              <AvatarImage src="" />
               <AvatarFallback className="text-2xl">
-                {user?.name?.charAt(0).toUpperCase() || 'U'}
+                {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>
             <Button variant="outline" size="sm">

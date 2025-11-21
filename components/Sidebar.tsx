@@ -34,6 +34,8 @@ const userNavItems = [
 
 const adminNavItems = [
   { href: '/admin', label: 'Overview', icon: LayoutDashboard },
+  { href: '/admin/scan', label: 'Scan Tickets', icon: QrCode },
+  { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/routes', label: 'Routes', icon: Train },
   { href: '/admin/fares', label: 'Fares', icon: DollarSign },
   { href: '/admin/revenue', label: 'Revenue', icon: DollarSign },

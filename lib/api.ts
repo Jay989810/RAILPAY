@@ -180,13 +180,43 @@ export async function getTicketById(id: string): Promise<TicketWithRoute | null>
 export async function getPasses(): Promise<Pass[]> {
   try {
     const result = await edgeCheckPassStatus(supabase)
-    if (!result.success || !result.data) return []
+    if (!result.success || !result.data) {
+      // Fallback to direct database query if edge function fails
+      return await getPassesDirectly()
+    }
 
     // Handle both single pass and array of passes
     const passes = Array.isArray(result.data) ? result.data : [result.data]
     return passes as Pass[]
   } catch (error) {
     console.error('Error fetching passes:', error)
+    // Fallback to direct database query on error
+    return await getPassesDirectly()
+  }
+}
+
+/**
+ * Fallback function to get passes directly from database
+ */
+async function getPassesDirectly(): Promise<Pass[]> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
+
+    const { data: passes, error } = await supabase
+      .from('passes')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching passes directly:', error)
+      return []
+    }
+
+    return passes || []
+  } catch (error) {
+    console.error('Error in getPassesDirectly:', error)
     return []
   }
 }
@@ -672,5 +702,160 @@ export async function adminGetPayments() {
   } catch (error) {
     console.error('Error fetching payments:', error)
     return []
+  }
+}
+
+/**
+ * Get all users/profiles (admin)
+ */
+export async function adminGetUsers(): Promise<Profile[]> {
+  try {
+    const isAdmin = await checkIsAdmin()
+    if (!isAdmin) throw new Error('Unauthorized: Admin access required')
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error fetching users:', error)
+    return []
+  }
+}
+
+/**
+ * Get all tickets (admin)
+ */
+export async function adminGetTickets(): Promise<TicketWithRoute[]> {
+  try {
+    const isAdmin = await checkIsAdmin()
+    if (!isAdmin) throw new Error('Unauthorized: Admin access required')
+
+    const { data: tickets, error: ticketsError } = await supabase
+      .from('tickets')
+      .select('*')
+      .order('purchased_at', { ascending: false })
+
+    if (ticketsError) throw ticketsError
+
+    // Fetch routes for each ticket
+    const ticketsWithRoutes: TicketWithRoute[] = await Promise.all(
+      (tickets || []).map(async (ticket) => {
+        if (!ticket.route_id) return { ...ticket, route: null }
+
+        const { data: route } = await supabase
+          .from('routes')
+          .select('*')
+          .eq('id', ticket.route_id)
+          .single()
+
+        return { ...ticket, route: route || null }
+      })
+    )
+
+    return ticketsWithRoutes
+  } catch (error) {
+    console.error('Error fetching tickets:', error)
+    return []
+  }
+}
+
+/**
+ * Get all passes (admin)
+ */
+export async function adminGetPasses(): Promise<Pass[]> {
+  try {
+    const isAdmin = await checkIsAdmin()
+    if (!isAdmin) throw new Error('Unauthorized: Admin access required')
+
+    const { data, error } = await supabase
+      .from('passes')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error fetching passes:', error)
+    return []
+  }
+}
+
+/**
+ * Get ticket and pass statistics (admin)
+ */
+export async function adminGetTicketPassStats() {
+  try {
+    const isAdmin = await checkIsAdmin()
+    if (!isAdmin) throw new Error('Unauthorized: Admin access required')
+
+    // Get total tickets
+    const { count: totalTickets } = await supabase
+      .from('tickets')
+      .select('*', { count: 'exact', head: true })
+
+    // Get tickets by status
+    const { count: usedTickets } = await supabase
+      .from('tickets')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'used')
+
+    const { count: activeTickets } = await supabase
+      .from('tickets')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active')
+
+    // Get total passes
+    const { count: totalPasses } = await supabase
+      .from('passes')
+      .select('*', { count: 'exact', head: true })
+
+    // Get active passes
+    const now = new Date().toISOString()
+    const { count: activePasses } = await supabase
+      .from('passes')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .gt('expires_at', now)
+
+    // Get passes by type
+    const { count: dailyPasses } = await supabase
+      .from('passes')
+      .select('*', { count: 'exact', head: true })
+      .eq('pass_type', 'daily')
+
+    const { count: weeklyPasses } = await supabase
+      .from('passes')
+      .select('*', { count: 'exact', head: true })
+      .eq('pass_type', 'weekly')
+
+    const { count: monthlyPasses } = await supabase
+      .from('passes')
+      .select('*', { count: 'exact', head: true })
+      .eq('pass_type', 'monthly')
+
+    return {
+      tickets: {
+        total: totalTickets || 0,
+        active: activeTickets || 0,
+        used: usedTickets || 0,
+      },
+      passes: {
+        total: totalPasses || 0,
+        active: activePasses || 0,
+        daily: dailyPasses || 0,
+        weekly: weeklyPasses || 0,
+        monthly: monthlyPasses || 0,
+      },
+    }
+  } catch (error) {
+    console.error('Error fetching ticket/pass stats:', error)
+    return {
+      tickets: { total: 0, active: 0, used: 0 },
+      passes: { total: 0, active: 0, daily: 0, weekly: 0, monthly: 0 },
+    }
   }
 }

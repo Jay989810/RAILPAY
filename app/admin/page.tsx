@@ -4,25 +4,28 @@ import { useEffect, useState } from 'react'
 import { GlassCard, GlassCardContent, GlassCardDescription, GlassCardHeader, GlassCardTitle } from '@/components/ui/glass-card'
 import { Train, DollarSign, Users, TrendingUp, Ticket, Route, Clock } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
-import { adminGetStats, adminGetPayments } from '@/lib/api'
-import { Loader2 } from 'lucide-react'
+import { adminGetStats, adminGetPayments, adminGetTicketPassStats } from '@/lib/api'
+import { Loader2, CheckCircle, XCircle } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 
 export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<any>(null)
   const [recentPayments, setRecentPayments] = useState<any[]>([])
+  const [ticketPassStats, setTicketPassStats] = useState<any>(null)
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [statsData, paymentsData] = await Promise.all([
+        const [statsData, paymentsData, ticketPassData] = await Promise.all([
           adminGetStats(),
           adminGetPayments(),
+          adminGetTicketPassStats(),
         ])
 
         setStats(statsData)
         setRecentPayments(paymentsData.slice(0, 10))
+        setTicketPassStats(ticketPassData)
       } catch (error) {
         console.error('Error loading admin data:', error)
       } finally {
@@ -157,6 +160,99 @@ export default function AdminDashboardPage() {
           )}
         </GlassCardContent>
       </GlassCard>
+
+      {/* Ticket and Pass Statistics */}
+      {ticketPassStats && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <GlassCard className="animate-fadeIn">
+            <GlassCardHeader>
+              <GlassCardTitle className="flex items-center gap-2">
+                <Ticket className="h-5 w-5 text-electric-cyan" />
+                Ticket Statistics
+              </GlassCardTitle>
+              <GlassCardDescription>Detailed breakdown of all tickets</GlassCardDescription>
+            </GlassCardHeader>
+            <GlassCardContent className="space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-4 rounded-xl border border-electric-cyan/20 glass">
+                  <div className="text-2xl font-bold text-electric-cyan">
+                    {ticketPassStats.tickets.total.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Total Tickets</div>
+                </div>
+                <div className="text-center p-4 rounded-xl border border-neon-mint/20 glass">
+                  <div className="text-2xl font-bold text-neon-mint">
+                    {ticketPassStats.tickets.active.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Active</div>
+                </div>
+                <div className="text-center p-4 rounded-xl border border-muted glass">
+                  <div className="text-2xl font-bold text-muted-foreground">
+                    {ticketPassStats.tickets.used.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Used</div>
+                </div>
+              </div>
+              <div className="pt-4 border-t border-electric-cyan/20">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Active Rate</span>
+                  <span className="font-semibold">
+                    {ticketPassStats.tickets.total > 0
+                      ? (
+                          (ticketPassStats.tickets.active / ticketPassStats.tickets.total) *
+                          100
+                        ).toFixed(1)
+                      : 0}
+                    %
+                  </span>
+                </div>
+              </div>
+            </GlassCardContent>
+          </GlassCard>
+
+          <GlassCard className="animate-fadeIn">
+            <GlassCardHeader>
+              <GlassCardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-neon-mint" />
+                Pass Statistics
+              </GlassCardTitle>
+              <GlassCardDescription>Detailed breakdown of all passes</GlassCardDescription>
+            </GlassCardHeader>
+            <GlassCardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-4 rounded-xl border border-electric-cyan/20 glass">
+                  <div className="text-2xl font-bold text-electric-cyan">
+                    {ticketPassStats.passes.total.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Total Passes</div>
+                </div>
+                <div className="text-center p-4 rounded-xl border border-neon-mint/20 glass">
+                  <div className="text-2xl font-bold text-neon-mint">
+                    {ticketPassStats.passes.active.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Active</div>
+                </div>
+              </div>
+              <div className="pt-4 border-t border-neon-mint/20">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Daily Passes</span>
+                    <span className="font-semibold">{ticketPassStats.passes.daily.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Weekly Passes</span>
+                    <span className="font-semibold">{ticketPassStats.passes.weekly.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Monthly Passes</span>
+                    <span className="font-semibold">{ticketPassStats.passes.monthly.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            </GlassCardContent>
+          </GlassCard>
+        </div>
+      )}
 
       {/* Simple Chart Placeholder */}
       <GlassCard className="animate-fadeIn">
